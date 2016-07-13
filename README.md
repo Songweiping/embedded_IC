@@ -1,6 +1,5 @@
-<snippet>
-  <content><![CDATA[
-# ${1:Embedded IC}
+
+## Embedded IC
 
 TODO: Write a project description
 
@@ -31,6 +30,4 @@ TODO: Write credits
 ## License
 
 TODO: Write license
-]]></content>
-  <tabTrigger>readme</tabTrigger>
-</snippet>
+
