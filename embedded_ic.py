@@ -122,3 +122,44 @@ class Embedded_IC(object):
 
     def buildGraph(self):
         opts = self._options
+        u = tf.placeholder(tf.int32, shape=[1])
+        v = tf.placeholder(tf.int32, shape=[1])
+        P_v = tf.placeholder(tf.float32, shape=[1])
+        
+        emb_user = tf.Variable(tf.random_uniform([opts.user_size, opts.emb_dim], -1.0, 1.0), name="emb_user")
+        global_step = tf.Variable(0, trainable=False, name="global_step", dtype=tf.int32)
+
+        u_emb = tf.nn.embedding_lookup(emb_user, u)
+        v_emb = tf.nn.embedding_lookup(emb_user, v)
+
+        u_0 = tf.slice(u_emb, [0], [1])
+        v_0 = tf.slice(v_emb, [0], [1])
+
+        u_1_n = tf.slice(u_emb, [1], [-1])
+        v_1_n = tf.slice(v_emb, [1], [-1])
+
+        x = u_0 + v_0 + tf.reduce_sum(tf.square(tf.sub(u_1_n, v_1_n)))
+        f = tf.sigmoid(-x)
+
+        one = tf.convert_to_tensor(1.0, dtype = tf.float32)
+
+        loss1 = - tf.mul(tf.sub(one, P_v), tf.log(one - f))
+        loss2 = -tf.mul(P_v, tf.log(f)) + loss1
+
+        lr = tf.train.exponential_decay(opts.lr, global_step, 1000, 0.96, staircase=True)
+
+        train1 = tf.GradientDescentOptimizer(lr).minimize(loss1, global_step=global_step)
+
+        train2 = tf.GradientDescentOptimizer(lr).minimize(loss2, global_step=global_step)
+
+        self.u = u
+        self.v = v
+        self.P_v = P_v
+        self.emb_user = emb_user
+        self.global_step = global_step
+
+        self.lr = lr
+        self.loss1 = loss1
+        self.loss2 = loss2
+        self.train1 = train1
+        self.train2 = train2
