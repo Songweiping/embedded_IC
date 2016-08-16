@@ -148,7 +148,7 @@ class Embedded_IC(object):
         f = tf.sigmoid(-x)
         #one = tf.convert_to_tensor(1.0, dtype = tf.float32)
 
-        loss1 = - tf.mul(tf.sub(1, P_v), tf.log(1 - f)) - tf.mul(P_v, tf.log(f))
+        loss1 = - tf.mul(tf.sub(1.0, P_v), tf.log(1.0 - f)) - tf.mul(P_v, tf.log(f))
         loss2 = -tf.log(1.0 - f)
 
         lr = tf.train.exponential_decay(opts.lr, global_step, 1000, 0.96, staircase=True)
@@ -174,7 +174,7 @@ class Embedded_IC(object):
     def SampleCacade(self):
         """sample a cascade randomly."""
         opts = self._options
-        return random.randint(0, opts.user_size - 1)
+        return random.randint(0, opts.train_size - 1)
         
 
     def SampleV(self, cascadeId):
@@ -199,8 +199,10 @@ class Embedded_IC(object):
     
     def computePv(self, v, ul):
         pv = 1.0
+        assert len(ul) > 0
         for u in ul:
-            p_uv = self._session.run(self.p_uv)
+            feed_dict={self.u:[u], self.v:[v]}
+            p_uv = self._session.run(self.p_uv, feed_dict=feed_dict)
             pv = pv * (1.0 - p_uv)
         p_v = 1.0 - pv
         return p_v
@@ -231,12 +233,12 @@ class Embedded_IC(object):
             if v_in_cascade:
                 p_v = self.computePv(v_id, u_id_list)
                 for u in u_id_list:
-                    feed_dict = {self.u:u, self.v:v_id, self.P_v:p_v}
+                    feed_dict = {self.u:[u], self.v:[v_id], self.P_v:[p_v]}
 
                     (lr, loss, step, _) = self._session.run([self.lr, self.loss1, self.global_step, self.train1], feed_dict=feed_dict)
             else:
                 for u in u_id_list:
-                    feed_dict = {self.u:u,  self.v:v_id}
+                    feed_dict = {self.u:[u],  self.v:[v_id]}
                     (lr, loss, step, _) = self._session.run([self.lr, self.loss2, self.global_step, self.train2], feed_dict=feed_dict)
             loss_list.append(loss) 
             if step % opts.freq == 0:
